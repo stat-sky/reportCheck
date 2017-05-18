@@ -1,0 +1,53 @@
+<logChecks>
+  <logCheck>
+    <name>inceptor server</name>
+    <serviceRole>INCEPTOR_SERVER</serviceRole>
+    <logFile>hive-server2</logFile>
+    <keys>
+      <key>
+        <name>CurrentSession</name>
+        <key-word>current session</key-word>
+        <line>5</line> <!-- 上下各读5行 -->
+      </key>
+      <key>
+        <name>timeOut</name>
+        <key-word>is time-out and will be closed</key-word>
+        <line>5</line>
+      </key>
+      <key>
+        <name>duration</name>
+        <key-word>duration</key-word>
+        <line>5</line>
+      </key>
+      <key>
+        <name>exception</name>
+        <key-word>ERROR</key-word>
+        <line>5</line>
+      </key>
+    </keys>
+  </logCheck>
+  <logCheck>
+    <name>metastore</name>
+    <serviceRole>INCEPTOR_METASTORE</serviceRole>
+    <logFile>hive-metastore</logFile>
+    <keys>
+      <key>
+        <name>exception</name>
+        <key-word>ERROR</key-word>
+        <line>5</line>
+      </key>
+    </keys>
+  </logCheck>
+  <logCheck>
+    <name>namenode</name>
+    <serviceRole>NAMENODE</serviceRole>
+    <logFile>hadoop-hdfs-namenode-*</logFile>
+    <keys>
+      <key>
+        <name>exception</name>
+        <key-word>ERROR</key-word>
+        <line>5</line>
+      </key>
+    </keys>
+  </logCheck>
+</logChecks>

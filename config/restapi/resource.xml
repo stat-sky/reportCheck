@@ -1,0 +1,79 @@
+<resources>
+	<!-- zookeeper -->
+	<resource>
+		<topic>ZOOKEEPER:ZOOKEEPER</topic>
+		<item>memory:zoo-env.sh:SERVER_JVMFLAGS</item>
+	</resource>
+	<!-- hdfs -->
+	<resource>
+		<topic>HDFS:HDFS_DATANODE</topic>
+		<item>memory:hadoop-env.sh:HADOOP_DATANODE_OPTS</item>
+	</resource>
+	<resource>
+		<topic>HDFS:HDFS_ACTIVENAMENODE</topic>
+		<item>memory:hadoop-env.sh:HADOOP_NAMENODE_OPTS</item>
+	</resource>
+	<resource>
+		<topic>HDFS:HDFS_STANDBYNAMENODE</topic>
+		<item>memory:hadoop-env.sh:HADOOP_NAMENODE_OPTS</item>
+	</resource>
+	<resource>
+		<topic>HDFS:HDFS_JOURNALNODE</topic>
+		<item>memory:hadoop-env.sh:HADOOP_JOURNALNODE_OPTS</item>
+	</resource>
+	<!-- yarn -->
+	<resource>
+		<topic>YARN:YARN_NODEMANAGER</topic>
+		<item>memory:yarn-env.sh:YARN_NODEMANAGER_HEAPSIZE;resource-memory:yarn-site.xml:yarn.nodemanager.resource.memory-mb;resource-cpu:yarn-site.xml:yarn.nodemanager.resource.cpu-vcores</item>
+	</resource>
+	<resource>
+		<topic>YARN:YARN_HISTORYSERVER</topic>
+		<item>memory:yarn-env.sh:YARN_HISTORYSERVER_HEAPSIZE</item>
+	</resource>
+	<resource>
+		<topic>YARN:YARN_RESOURCEMANAGER</topic>
+		<item>memory:yarn-env.sh:YARN_RESOURCEMANAGER_HEAPSIZE</item>
+	</resource>
+	<!-- hyperbase -->
+	<resource>
+		<topic>HYPERBASE:HYPERBASE_CHRONOSSERVER</topic>
+		<item>memory:hbase-env.sh:HBASE_HEAPSIZE</item>
+	</resource>
+	<resource>
+		<topic>HYPERBASE:HYPERBASE_MASTER</topic>
+		<item>memory:hbase-env.sh:HBASE_MASTER_OPTS</item>
+	</resource>
+	<resource>
+		<topic>HYPERBASE:HYPERBASE_REGIONSERVER</topic>
+		<item>memory:hbase-env.sh:HBASE_REGIONSERVER_OPTS</item>
+	</resource>
+	<!-- inceptor streamsql -->
+	<resource>
+		<topic>INCEPTOR_SQL:INCEPTOR_SERVER</topic>
+		<item>memory:hive-env.sh:INCEPTOR_SERVER_MEMORY</item>
+	</resource>
+	<!-- discover -->
+	<resource>
+		<topic>INCEPTOR_ML:INCEPTOR_RSTUDIO</topic>
+		<item>memory:discover-context-env.properties:DISCOVER_EXECUTOR_MEMORY</item>
+	</resource>
+	<!-- oozie -->
+	<resource>
+		<topic>OOZIE:OOZIE_SERVER</topic>
+		<item>memory:oozie-env.sh:CATALINA_OPTS</item>
+	</resource>
+	<!-- sqoop server -->
+	<resource>
+		<topic>SQOOP:SQOOP_SQOOP</topic>
+		<item>memory:setenv.sh:JAVA_OPTS</item>
+	</resource>
+	<!-- es -->
+	<resource>
+		<topic>ELASTICSEARCH:ELASTICSEARCH_SERVER</topic>
+		<item>memory:elasticsearch-env:ES_HEAP_SIZE</item>
+	</resource>
+	<resource>
+		<topic>KAFKA:KAFKA_SERVER</topic>
+		<item>memory:/usr/lib/kafka/bin/kafka-server-start.sh:KAFKA_HEAP_OPTS</item>
+	</resource>
+</resources>

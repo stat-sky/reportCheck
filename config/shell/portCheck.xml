@@ -1,0 +1,18 @@
+<portChecks>
+  <portCheck>
+    <topic>service : inceptor server2, port 10000 : </topic>
+    <command>netstat -anp | grep 10000 | grep ESTABLISHED | wc -l</command>
+  </portCheck>
+  <portCheck>
+    <topic>service : meta store, port 9083 :</topic>
+    <command>netstat -anp | grep 9083 | wc -l</command>
+  </portCheck>
+  <portCheck>
+    <topic>service : active namenode, port 8020 : </topic>
+    <command>netstat -anp | grep 8020 | wc -l</command>
+  </portCheck>
+  <portCheck>
+    <topic>total port number :</topic>
+    <command>netstat -anp | wc -l</command>
+  </portCheck>
+</portChecks>
