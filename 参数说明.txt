@@ -1,0 +1,28 @@
+managerIP ： manager所在节点IP
+username ： manager界面登录用户名（可为guest用户）
+password ： manager界面登录密码
+
+outputSheet ： 输出报告项选择
+checkLog ： 是否开启日志检查
+
+enableKerberos ： 集群是否开启kerberos
+
+tdh_version ： 集群版本号
+
+os ： 操作系统类型
+
+nodeUser ： 节点登录用户，目前默认使用root用户
+rootKey ： 节点用户密匙，默认路径为/etc/transwarp/transwarp-id_rsa
+hdfsKey ： hdfs用户的keytab路径
+
+className ： mysql数据库的jdbc连接classname
+
+goalPath ： 报告输出路径
+
+scriptSavePath ： 日志检查报告在每个节点的缓存位置
+
+logCheckTimeRange ： 日志检查的时间范围
+
+threadNumber ： 巡检工具运行的进程数
+
+configMap ： 服务配置文件的路径，默认为/var/lib/transwarp-manager/master/data/data/Service.json
