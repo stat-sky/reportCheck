@@ -110,7 +110,9 @@ public class NodeInfoSheet extends ExcelSheetTemplate {
 					addRow += 1;
 				}
 			}
-			sheet.mergeCells(1, row, 1, row + addRow - 1);
+			if(addRow > 0) {
+				sheet.mergeCells(1, row, 1, row + addRow - 1);
+			}
 			sheet.addCell(new Label(1, row, hostname, cellFormat));
 			row = row + addRow;
 		}

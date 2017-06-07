@@ -4,6 +4,7 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 
 import io.transwarp.information.PropertiesInfo;
+import io.transwarp.report.outputByExcel.CheckReport;
 import io.transwarp.report.outputByExcel.ClusterReport;
 import io.transwarp.servlet.ClusterCheck;
 import io.transwarp.util.UtilTool;
@@ -25,10 +26,12 @@ public class TotalReport {
 		String timestamp = simpleFormat.format(date);
 //		ClusterReport clusterReport = new ClusterReport();
 		ClusterReportTemplate clusterReport = new ClusterReport();
+		CheckReport checkReport = new CheckReport();
 //		NodeReport nodeReport = new NodeReport();
 		try {
 			String fileName = path + "REPORT-" + timestamp + ".xls";
 			clusterReport.outputToFile(fileName);
+			checkReport.outputCheckReport(path + "checkReport.xls");
 //			nodeReport.outputToFile(path + "nodeCheck/");
 //			OutputByJson.output(path + "json/");
 		} catch (Exception e) {

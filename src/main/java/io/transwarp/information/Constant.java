@@ -14,7 +14,7 @@ public class Constant {
 	public static final String FIND_MORE_NODE = "查询多个节点";
 	public static final String NODE_METRIC = "节点指标查询";
 	/** 日期格式设置 */
-	public static final SimpleDateFormat DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd hh:mm:ss");
+	public static final SimpleDateFormat DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
 	/** 浮点数小数位设置 */
 	public static final DecimalFormat DECIMAL_FORMAT = new DecimalFormat("#0.00");
 	/** 编码格式 */

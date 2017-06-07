@@ -11,6 +11,7 @@ import org.apache.log4j.Logger;
 import io.transwarp.bean.restapiInfo.NodeBean;
 import io.transwarp.bean.restapiInfo.RoleBean;
 import io.transwarp.bean.restapiInfo.ServiceBean;
+import io.transwarp.information.CheckInfos;
 import io.transwarp.information.ClusterInformation;
 import io.transwarp.information.Constant;
 import io.transwarp.util.UtilTool;
@@ -135,6 +136,17 @@ public class BuildRoleMap extends ClusterInformation {
 			int allocatedCoreID = addRoleTopic("nodeResource", "Allocated Core");
 			String allocatedCoreValue = ",Cpu : " + allocatedCore.get(hostname);
 			addRoleInfoToNodeList(hostname, allocatedCoreID, allocatedCoreValue);
+			
+			//计算内存和cpu使用情况
+			double memUsedPercent = allocatedMemory.get(hostname) / totalMemory.get(hostname) * 100;
+			if(memUsedPercent > 65) {
+				CheckInfos.memUsed.put(hostname, Constant.DECIMAL_FORMAT.format(memUsedPercent) + "%");
+			}
+			NodeBean node = ClusterInformation.nodeInfoByRestAPIs.get(hostname);
+			double cpuUsedPercent = allocatedCore.get(hostname) / Double.valueOf(node.getNumCores()) * 100;
+			if(cpuUsedPercent > 65) {
+				CheckInfos.cpuUsed.put(hostname, Constant.DECIMAL_FORMAT.format(cpuUsedPercent) + "%");
+			}
 		}
 		
 	}
@@ -178,7 +190,7 @@ public class BuildRoleMap extends ClusterInformation {
 		//记录该服务角色的占用资源
 		if(roleInfo != null) {
 			String[] items = roleInfo.split(",");
-			int number = 1;
+			double number = 1;
 			double memory = 0;
 			double core = 0;
 			for(String item : items) {
@@ -187,7 +199,12 @@ public class BuildRoleMap extends ClusterInformation {
 					continue;
 				}
 				if(item.indexOf("number") != -1) {
-					number = Integer.valueOf(value);
+					if(value.indexOf("/") != -1) {
+						String[] nums = value.split("\\s*/\\s*");
+						number = Double.valueOf(nums[0]) / Double.valueOf(nums[1]);
+					}else {
+						number = Integer.valueOf(value);
+					}
 				}else if(item.startsWith("memory")) {
 					memory = Double.valueOf(value);
 				}else if(item.startsWith("vcore")) {

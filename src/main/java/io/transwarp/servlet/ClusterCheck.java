@@ -1,6 +1,7 @@
 package io.transwarp.servlet;
 
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -16,7 +17,9 @@ import io.transwarp.bean.restapiInfo.RoleBean;
 import io.transwarp.bean.restapiInfo.ServiceBean;
 import io.transwarp.connTool.MyThreadPool;
 import io.transwarp.connTool.ShellUtil;
+import io.transwarp.information.CheckInfos;
 import io.transwarp.information.ClusterInformation;
+import io.transwarp.information.Constant;
 import io.transwarp.information.PropertiesInfo;
 import io.transwarp.servlet.configCheck.ServiceConfigCheckRunnable;
 import io.transwarp.servlet.hdfsCheck.HdfsCheckRunnable;
@@ -56,6 +59,8 @@ public class ClusterCheck extends ClusterInformation {
 	}
 	
 	public void checkClusterInfo() {
+		Date nowDate = new Date(System.currentTimeMillis());
+		CheckInfos.beginTime = Constant.DATE_FORMAT.format(nowDate);
 		getCheckItem();
 		getLoginInfoBean();
 		getInfoByRestAPI();
@@ -67,6 +72,8 @@ public class ClusterCheck extends ClusterInformation {
 			getExecutorInfo();
 		}
 		MyThreadPool.closeWhenCompleted(5000);
+		nowDate = new Date(System.currentTimeMillis());
+		CheckInfos.endTime = Constant.DATE_FORMAT.format(nowDate);
 	}
 	
 	protected void getCheckItem() {
