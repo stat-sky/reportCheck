@@ -1,13 +1,11 @@
 package io.transwarp.servlet.hdfsCheck;
 
-import java.io.IOException;
-
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.log4j.Logger;
 
-import io.transwarp.bean.LoginInfoBean;
+import io.transwarp.connTool.HdfsPool;
 import io.transwarp.connTool.HdfsUtil;
 import io.transwarp.connTool.MyThreadPool;
 import io.transwarp.information.ClusterInformation;
@@ -15,16 +13,7 @@ import io.transwarp.information.ClusterInformation;
 public class HdfsSpaceCheckRunnable extends ClusterInformation implements Runnable{
 
 	private static final Logger LOG = Logger.getLogger(HdfsSpaceCheckRunnable.class);
-	private String namenodeIP;
-	private LoginInfoBean loginInfo;
-	private String[] configPaths;
 	private FileSystem fs;
-	
-	public HdfsSpaceCheckRunnable(String namenodeIP, LoginInfoBean loginInfo, String[] configPaths) {
-		this.namenodeIP = namenodeIP;
-		this.loginInfo = loginInfo;
-		this.configPaths = configPaths;
-	}
 	
 	@Override
 	public void run() {
@@ -36,12 +25,13 @@ public class HdfsSpaceCheckRunnable extends ClusterInformation implements Runnab
 		}catch(Exception e) {
 			e.printStackTrace();
 			MyThreadPool.threadFailure();
-			LOG.info("hdfs check error");
+			ClusterInformation.errorInfos.add("hdfs space check error|" + e.getMessage());
+			LOG.error("hdfs check error");
 		}finally {
 			if(fs != null) {
 				try {
-					fs.close();
-				} catch (IOException e) {
+					HdfsPool.putHdfsConn(fs);
+				} catch (Exception e) {
 					e.printStackTrace();
 				}
 			}
@@ -49,7 +39,11 @@ public class HdfsSpaceCheckRunnable extends ClusterInformation implements Runnab
 	}
 	
 	protected void checkFileSpace() throws Exception {
-		fs = HdfsUtil.getHdfsFileSystem(configPaths, namenodeIP, loginInfo);
+		if(!HdfsPool.buildPool) {
+			LOG.error("hdfs connection pool open error");
+			throw new Exception("get hdfs connection faild");
+		}
+		fs = HdfsPool.getHdfsConn();
 		deepSearchFile(1, "/");
 	}
 	

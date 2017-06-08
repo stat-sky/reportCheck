@@ -35,7 +35,8 @@ public class ProcessCheckRunnable extends ClusterInformation implements Runnable
 		}catch(Exception e) {
 			e.printStackTrace();
 			MyThreadPool.threadFailure();
-			LOG.info("process check is error, service role is : " + topic);
+			ClusterInformation.errorInfos.add("process check of service : " + topic + " is error|" + e.getMessage());
+			LOG.error("process check is error, service role is : " + topic);
 		}
 	}
 

@@ -3,8 +3,10 @@ package io.transwarp.report.outputByExcel.sheet;
 import java.util.Iterator;
 
 import jxl.write.Label;
+import io.transwarp.information.CheckInfos;
 import io.transwarp.information.ClusterInformation;
 import io.transwarp.report.outputByExcel.ExcelSheetTemplate;
+import io.transwarp.util.UtilTool;
 
 public class HdfsInfoSheet extends ExcelSheetTemplate {
 
@@ -36,8 +38,15 @@ public class HdfsInfoSheet extends ExcelSheetTemplate {
 					sheet.mergeCells(column, row, column + 1, row);
 					sheet.addCell(new Label(column, row, line, cellFormat));
 				}else {
-					sheet.addCell(new Label(column, row, line.substring(0, splitID), cellFormat));
-					sheet.addCell(new Label(column + 1, row, line.substring(splitID + 1), cellFormat));
+					String name = line.substring(0, splitID);
+					String valueOfItem = line.substring(splitID + 1);
+					sheet.addCell(new Label(column, row, name, cellFormat));
+					sheet.addCell(new Label(column + 1, row, valueOfItem, cellFormat));
+					if(name.startsWith("DFS Used")) {
+						Double usedPercent = Double.valueOf(UtilTool.getDouble(valueOfItem));
+						CheckInfos.maxHdfsUsed = Math.max(CheckInfos.maxHdfsUsed, usedPercent);
+						CheckInfos.minHdfsUsed = Math.min(CheckInfos.minHdfsUsed, usedPercent);
+					}
 				}
 				row += 1;
 			}

@@ -1,7 +1,6 @@
 package io.transwarp.servlet.tableCheck;
 
 import java.io.FileNotFoundException;
-import java.io.IOException;
 import java.util.LinkedList;
 import java.util.Queue;
 
@@ -10,9 +9,8 @@ import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.log4j.Logger;
 
-import io.transwarp.bean.LoginInfoBean;
 import io.transwarp.bean.TableBean;
-import io.transwarp.connTool.HdfsUtil;
+import io.transwarp.connTool.HdfsPool;
 import io.transwarp.connTool.MyThreadPool;
 import io.transwarp.information.ClusterInformation;
 
@@ -21,16 +19,10 @@ public class TableCheckRunnable extends ClusterInformation implements Runnable{
 	private static final Logger LOG = Logger.getLogger(TableCheckRunnable.class);
 	
 	private TableBean table;
-	private String namenodeIP;
-	private String[] configPaths;
-	private LoginInfoBean loginInfo;
 	private FileSystem fs;
 	
-	public TableCheckRunnable(String namenodeIP, String[] configPaths, TableBean table, LoginInfoBean loginInfo) {
+	public TableCheckRunnable(TableBean table) {
 		this.table = table;
-		this.namenodeIP = namenodeIP;
-		this.configPaths = configPaths;
-		this.loginInfo = loginInfo;
 	}
 	
 	@Override
@@ -42,16 +34,17 @@ public class TableCheckRunnable extends ClusterInformation implements Runnable{
 		}catch(FileNotFoundException fileNoFound) {
 			LOG.info(fileNoFound.getMessage());
 			MyThreadPool.threadSuccess();
-			LOG.error("table check error, table name is : " + table.getTable_name());
+			ClusterInformation.errorInfos.add("table check error : " + table.getTable_name() + "|" + fileNoFound.getMessage());
 		}catch(Exception e) {
 			e.printStackTrace();
 			MyThreadPool.threadFailure();
+			ClusterInformation.errorInfos.add("table check error : " + table.getTable_name() + "|" + e.getMessage());
 			LOG.error("table check error, table name is : " + table.getTable_name());
 		}finally {
 			if(fs != null) {
 				try {
-					fs.close();
-				} catch (IOException e) {
+					HdfsPool.putHdfsConn(fs);
+				} catch (Exception e) {
 					e.printStackTrace();
 				}
 			}
@@ -59,7 +52,7 @@ public class TableCheckRunnable extends ClusterInformation implements Runnable{
 	}
 	
 	protected void checkTableSpace() throws Exception {
-		fs = HdfsUtil.getHdfsFileSystem(configPaths, namenodeIP, loginInfo);
+		fs = HdfsPool.getHdfsConn();
 		Queue<String> queueOfPath = new LinkedList<String>();
 		String tableLocation = table.getTable_location();
 		queueOfPath.offer(tableLocation);

@@ -48,6 +48,7 @@ public class LogCheckRunnable extends ClusterInformation implements Runnable{
 		}catch(Exception e) {
 			e.printStackTrace();
 			MyThreadPool.threadFailure();
+			ClusterInformation.errorInfos.add("log check error|" + e.getMessage());
 			LOG.error("log check is error, hostname is : " + hostname);
 		}
 	}

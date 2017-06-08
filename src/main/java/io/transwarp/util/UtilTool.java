@@ -6,6 +6,9 @@ import io.transwarp.information.Constant;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
+import java.io.IOException;
+import java.net.InetSocketAddress;
+import java.net.Socket;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -118,12 +121,12 @@ public class UtilTool {
 		return items[items.length - 1];
 	}
 	
-	public static String getCmdOfSecurity(String command, LoginInfoBean loginInfo) {
+	public static String getCmdOfSecurity(String command, LoginInfoBean loginInfo, String hostname) {
 		String enableKerberos = loginInfo.getEnableKerberos();
 		if(enableKerberos.equals("false")) {
 			return "sudo -u " + loginInfo.getHdfsUser() + " " + command;
 		}else {
-			return "kinit -kt " + loginInfo.getHdfsKeytab() + " " + loginInfo.getHdfsUser() + ";" + command;
+			return "kinit -kt " + loginInfo.getHdfsKeytab() + " " + loginInfo.getHdfsUser() + "/" + hostname + ";" + command;
 		}
 	}
 	
@@ -136,5 +139,20 @@ public class UtilTool {
 		return Constant.DECIMAL_FORMAT.format(number) + " " + Constant.UNITS[carry];
 	}
 	
+	public static boolean isConnectionBySsh(String ipAddress, int port) {
+		Socket socket = new Socket();
+		try {
+			socket.connect(new InetSocketAddress(ipAddress, port));
+		}catch(Exception e) {
+			return false;
+		}finally {
+			try {
+				socket.close();
+			}catch(IOException e) {
+				e.printStackTrace();
+			}
+		}
+		return true;
+	}
 
 }

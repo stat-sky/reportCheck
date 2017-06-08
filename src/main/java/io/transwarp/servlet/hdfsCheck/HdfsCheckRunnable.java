@@ -17,10 +17,12 @@ public class HdfsCheckRunnable extends ClusterInformation implements Runnable{
 	private static final Logger LOG = Logger.getLogger(HdfsCheckRunnable.class);
 	
 	private String namenodeIP;
+	private String hostname;
 	private LoginInfoBean loginInfo;
 	
-	public HdfsCheckRunnable(String namenodeIP, LoginInfoBean loginInfo) {
+	public HdfsCheckRunnable(String namenodeIP, String hostname, LoginInfoBean loginInfo) {
 		this.namenodeIP = namenodeIP;
+		this.hostname = hostname;
 		this.loginInfo = loginInfo;
 	}
 	
@@ -44,11 +46,15 @@ public class HdfsCheckRunnable extends ClusterInformation implements Runnable{
 			String itemName = config.elementText("name");
 			String execCommand = config.elementText("command");
 			try {
-				execCommand = UtilTool.getCmdOfSecurity(execCommand, loginInfo);
+				execCommand = UtilTool.getCmdOfSecurity(execCommand, loginInfo, hostname);
 				String result = ShellUtil.executeDist(execCommand, namenodeIP);
+				if(result.equals("")) {
+					throw new Exception("hdfs check result is null");
+				}
 				ClusterInformation.hdfsInfos.put(itemName, result);
 			}catch(Exception e) {
 				LOG.error("check hdfs error, exec command is : " + execCommand);
+				ClusterInformation.errorInfos.add("hdfs info check error, error command is : " + execCommand + "|" + e.getMessage());
 			}
 		}
 	}

@@ -37,6 +37,7 @@ public class ResourceCheckRunnable extends ClusterInformation implements Runnabl
 		}catch(Exception e) {
 			e.printStackTrace();
 			MyThreadPool.threadFailure();
+			ClusterInformation.errorInfos.add("get resource of serviceType : " + serviceType + " is error|" + e.getMessage());
 			LOG.error("role resource check is error, role is : " + role.getName());
 		}finally {
 			ClusterInformation.completedOfRoleResourceCheck.incrementAndGet();

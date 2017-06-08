@@ -1,9 +1,17 @@
 package io.transwarp.report.outputByExcel;
 
+import io.transwarp.autoCheck.CheckTemplate;
 import io.transwarp.autoCheck.DiskUsedOnNodeCheck;
+import io.transwarp.autoCheck.LicenseDateCheck;
 import io.transwarp.bean.restapiInfo.ServiceBean;
 import io.transwarp.information.CheckInfos;
 import io.transwarp.information.ClusterInformation;
+import io.transwarp.report.outputByExcel.warnAndSugOnCluster.WSCpuAndMemory;
+import io.transwarp.report.outputByExcel.warnAndSugOnCluster.WSDiskSpace;
+import io.transwarp.report.outputByExcel.warnAndSugOnCluster.WSHdfsUsed;
+import io.transwarp.report.outputByExcel.warnAndSugOnCluster.WSLicense;
+import io.transwarp.report.outputByExcel.warnAndSugOnCluster.WSNetwork;
+import io.transwarp.report.outputByExcel.warnAndSugOnCluster.WarnAndSuggestTemplate;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -29,11 +37,34 @@ public class CheckReport extends ClusterInformation {
 	private WritableCellFormat titleFormat;
 	private WritableCellFormat cellFormat;
 	private WritableCellFormat title_background;
-	private int warnID;
+	public static int warnID = 1;
+	private String[] autoCheckItems = new String[]{"disk", "cpuUsed", "license", "hdfsUsed"};
 	
 	public CheckReport() {
-		DiskUsedOnNodeCheck diskCheck = new DiskUsedOnNodeCheck();
-		diskCheck.checkDiskUsed();
+		checkCluster();
+	}
+	
+	private void checkCluster() {
+		String[] autoCheckItems = new String[]{"disk", "license"};
+		CheckTemplate check;
+		for(String item : autoCheckItems) {
+			try {
+				check = getCheck(item);
+				check.check();
+			}catch(Exception e) {
+				e.printStackTrace();
+			}
+		}
+	}
+	
+	private CheckTemplate getCheck(String item) throws Exception {
+		if(item.equals("disk")) {
+			return new DiskUsedOnNodeCheck();
+		}else if(item.equals("license")) {
+			return new LicenseDateCheck();
+		}else {
+			throw new Exception("no this check item");
+		}
 	}
 	
 	public void outputCheckReport(String path) {
@@ -205,79 +236,50 @@ public class CheckReport extends ClusterInformation {
 		StringBuffer suggestOfCluster = new StringBuffer();
 		warnID = 1;
 		
-		String warnAndSugOfDisk = addWarnAndSuggestOfDisk(beginRow);
-		String[] items_disk = warnAndSugOfDisk.split("\\|");
-		if(items_disk.length > 0) {
-			warnOfCluster.append(items_disk[0]);
-			suggestOfCluster.append(items_disk[1]);
-		}
-		
-		String warnAndSugOfCpu = addWarnAndSuggestOfCpu(beginRow);
-		String[] items_cpu = warnAndSugOfCpu.split("\\|");
-		if(items_cpu.length > 0) {
-			warnOfCluster.append(items_cpu[0]);
-			suggestOfCluster.append(items_cpu[1]);
+		WarnAndSuggestTemplate warnAndSuggest = null;
+		for(String autoCheckItem : autoCheckItems) {
+			warnAndSuggest = getAutoCheckItem(autoCheckItem);
+			try {
+				String values = warnAndSuggest.getWarnAndSuggest();
+				String[] items = values.split("\\|");
+				if(items.length > 0) {
+					warnOfCluster.append(items[0]);
+					suggestOfCluster.append(items[1]);
+				}
+			}catch(Exception e) {
+				e.printStackTrace();
+			}
 		}
 		
 		sheet.addCell(new Label(1, beginRow, "潜在隐患", title_background));
 		sheet.setRowView(beginRow, 350);
 		sheet.addCell(new Label(1, beginRow + 1, warnOfCluster.toString(), cellFormat));
 		String[] lines_warn = warnOfCluster.toString().split("\n");
-		sheet.setRowView(beginRow + 1, 350 * lines_warn.length, false);
+		int len_warn = Math.max(3, lines_warn.length);
+		sheet.setRowView(beginRow + 1, 300 * len_warn, false);
 		sheet.addCell(new Label(1, beginRow + 2, "建议", title_background));
 		sheet.setRowView(beginRow + 2, 350);
 		sheet.addCell(new Label(1, beginRow + 3, suggestOfCluster.toString(), cellFormat));
 		String[] lines_suggest = suggestOfCluster.toString().split("\n");
-		sheet.setRowView(beginRow + 3, 350 * lines_suggest.length, false);
+		int len_suggest = Math.max(3,  lines_suggest.length);
+		sheet.setRowView(beginRow + 3, 350 * len_suggest, false);
 		return beginRow + 4;
 	}
 	
-	private String addWarnAndSuggestOfDisk(int beginRow) throws Exception {
-		StringBuffer warnInfo = new StringBuffer();
-		StringBuffer suggestInfo = new StringBuffer();
-		if(CheckInfos.diskOfLessMemory.size() > 0) {
-			warnInfo.append(warnID).append("、").append("集群磁盘空间不足:\n");
-			for(Iterator<String> hostnames = CheckInfos.diskOfLessMemory.keySet().iterator(); hostnames.hasNext(); ) {
-				String hostname = hostnames.next();
-				warnInfo.append("\t").append(hostname).append(":").append(CheckInfos.diskOfLessMemory.get(hostname)).append("\n");
-			}
-			suggestInfo.append(warnID).append("、").append("集群扩容\n");
-			warnID += 1;
+	private WarnAndSuggestTemplate getAutoCheckItem(String itemName) {
+		if(itemName.equals("disk")) {
+			return new WSDiskSpace();
+		}else if(itemName.equals("cpuUsed")) {
+			return new WSCpuAndMemory();
+		}else if(itemName.equals("hdfsUsed")) {
+			return new WSHdfsUsed();
+		}else if(itemName.equals("license")) {
+			return new WSLicense();
+		}else if(itemName.equals("network")) {
+			return new WSNetwork();
+		}else {
+			throw new RuntimeException("no this check item");
 		}
-		if(CheckInfos.diskOfLessInodes.size() > 0) {
-			warnInfo.append(warnID).append("、").append("inode使用率过高:\n");
-			for(Iterator<String> hostnames = CheckInfos.diskOfLessInodes.keySet().iterator(); hostnames.hasNext(); ) {
-				String hostname = hostnames.next();
-				warnInfo.append("    ").append(hostname).append(":").append(CheckInfos.diskOfLessInodes.get(hostname)).append("\n");
-			}
-			suggestInfo.append(warnID).append("、").append("清理小文件\n");
-			warnID += 1;
-		}
-		return warnInfo.toString() + "|" + suggestInfo.toString();
-	}
-	
-	private String addWarnAndSuggestOfCpu(int beginRow) throws Exception {
-		StringBuffer warnInfo = new StringBuffer();
-		StringBuffer suggestInfo = new StringBuffer();
-		if(CheckInfos.cpuUsed.size() > 0) {
-			warnInfo.append(warnID).append("、").append("cpu使用率过高:\n");
-			for(Iterator<String> hostnames = CheckInfos.cpuUsed.keySet().iterator(); hostnames.hasNext(); ) {
-				String hostname = hostnames.next();
-				warnInfo.append("    ").append(hostname).append(":").append(CheckInfos.cpuUsed.get(hostname)).append("\n");
-			}
-			suggestInfo.append(warnID).append("、").append("集群扩容\n");
-			warnID += 1;
-		}
-		if(CheckInfos.memUsed.size() > 0) {
-			warnInfo.append(warnID).append("、").append("内存使用率过高:\n");
-			for(Iterator<String> hostnames = CheckInfos.memUsed.keySet().iterator(); hostnames.hasNext(); ) {
-				String hostname = hostnames.next(); 
-				warnInfo.append("    ").append(hostname).append(":").append(CheckInfos.memUsed.get(hostname)).append("\n");
-			}
-			suggestInfo.append(warnID).append("、").append("集群扩容\n");
-			warnID += 1;
-		}
-		return warnInfo.toString() + "|" + suggestInfo.toString();
 	}
 	
 	private int addClientSignature(int beginRow) throws Exception {

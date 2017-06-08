@@ -48,6 +48,7 @@ public class HdfsMetaDataCheckRunnable extends ClusterInformation implements Run
 		}catch(Exception e) {
 			e.printStackTrace();
 			MyThreadPool.threadFailure();
+			ClusterInformation.errorInfos.add("hdfs meta data of node : " + hostname + " check error|" + e.getMessage());
 			LOG.error("hdfs meta data check is error, hostname is : " + hostname);
 		}
 	}

@@ -84,9 +84,6 @@ public class BuildRoleMap extends ClusterInformation {
 	protected void putServiceRoleInfoToRoleMap() {
 		for(Iterator<String> servicenames = ClusterInformation.serviceInfoByRestAPIs.keySet().iterator(); servicenames.hasNext(); ) {
 			String servicename = servicenames.next();
-			if(servicename.equals("transwarp_license_cluster") || servicename.equals("Transpedia1")) {
-				continue;
-			}
 			ServiceBean service = ClusterInformation.serviceInfoByRestAPIs.get(servicename);
 			List<RoleBean> roles = service.getRoles();
 			boolean hasMetastore = false;
@@ -111,7 +108,7 @@ public class BuildRoleMap extends ClusterInformation {
 			}
 			//若为inceptor或streamsql，则添加executor信息
 			try {
-				if(service.getType().equals("INCEPTOR_SQL")) {
+				if(service.getType().equals("INCEPTOR_SQL") && !service.getHealth().equals("DOWN")) {
 					addExecutorInfo(servicename);
 				}
 				if(hasMetastore) {

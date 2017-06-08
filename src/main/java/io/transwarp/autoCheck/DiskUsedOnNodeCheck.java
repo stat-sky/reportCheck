@@ -9,10 +9,10 @@ import io.transwarp.information.CheckInfos;
 import io.transwarp.information.ClusterInformation;
 import io.transwarp.util.UtilTool;
 
-public class DiskUsedOnNodeCheck extends ClusterInformation {
+public class DiskUsedOnNodeCheck extends CheckTemplate {
 	
 	
-	public void checkDiskUsed() {
+	public void check() {
 		for(Iterator<String> hostnames = ClusterInformation.nodeInfoByShells.keySet().iterator(); hostnames.hasNext(); ) {
 			String hostname = hostnames.next();
 			Map<String, String> nodeInfos = ClusterInformation.nodeInfoByShells.get(hostname);

@@ -55,6 +55,7 @@ public class RestapiCheckV46 extends ClusterInformation implements RestapiCheckI
 			}
 		}catch(Exception e) {
 			e.printStackTrace();
+			ClusterInformation.errorInfos.add("restapi check|" + e.getMessage());
 		}finally {
 			if(method != null) {
 				try {

@@ -26,17 +26,21 @@ public class TotalReport {
 		String timestamp = simpleFormat.format(date);
 //		ClusterReport clusterReport = new ClusterReport();
 		ClusterReportTemplate clusterReport = new ClusterReport();
-		CheckReport checkReport = new CheckReport();
 //		NodeReport nodeReport = new NodeReport();
 		try {
 			String fileName = path + "REPORT-" + timestamp + ".xls";
 			clusterReport.outputToFile(fileName);
-			checkReport.outputCheckReport(path + "checkReport.xls");
 //			nodeReport.outputToFile(path + "nodeCheck/");
 //			OutputByJson.output(path + "json/");
 		} catch (Exception e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
+		}
+		
+		String autoReport = PropertiesInfo.prop_env.getProperty("autoReport", "true");
+		if(autoReport.equals("true")) {
+			CheckReport checkReport = new CheckReport();
+			checkReport.outputCheckReport(path + "checkReport.xls");
 		}
 	}
 }

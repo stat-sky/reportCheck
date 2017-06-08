@@ -15,6 +15,7 @@ import io.transwarp.bean.TableBean;
 import io.transwarp.bean.restapiInfo.NodeBean;
 import io.transwarp.bean.restapiInfo.RoleBean;
 import io.transwarp.bean.restapiInfo.ServiceBean;
+import io.transwarp.connTool.HdfsPool;
 import io.transwarp.connTool.MyThreadPool;
 import io.transwarp.connTool.ShellUtil;
 import io.transwarp.information.CheckInfos;
@@ -50,6 +51,8 @@ public class ClusterCheck extends ClusterInformation {
 	private LoginInfoBean loginInfo;
 	private String commandOfCheckNamenode;
 	private String activeNamenodeIP = null;
+	private String activeNamenodeHost = null;
+	private String managerHost = null;
 	private String[] hdfsPaths;
 	private Vector<String> datanodes = new Vector<String>();
 	private String checkLog;
@@ -72,37 +75,30 @@ public class ClusterCheck extends ClusterInformation {
 			getExecutorInfo();
 		}
 		MyThreadPool.closeWhenCompleted(5000);
+		closeHdfsPool();
 		nowDate = new Date(System.currentTimeMillis());
 		CheckInfos.endTime = Constant.DATE_FORMAT.format(nowDate);
 	}
 	
 	protected void getCheckItem() {
 		String outputSheet = PropertiesInfo.prop_env.getProperty("outputSheet", "license,roleMap,nodeInfo");
-		if(outputSheet.equals("")) {
-			outputSheet = "license";
-		}
 		String[] items = outputSheet.split(",");
 		PropertiesInfo.checkItems = new CheckItemBean(items);
 	}
 	
 	protected void getLoginInfoBean() {
 		loginInfo = new LoginInfoBean();
-		String enableKerberos = PropertiesInfo.prop_env.getProperty("enableKerberos", "false");
 		String managerIP = PropertiesInfo.prop_env.getProperty("managerIP", "127.0.0.0");
 		String managerUser = PropertiesInfo.prop_env.getProperty("username", "admin");
 		String managerPwd = PropertiesInfo.prop_env.getProperty("password", "admin");
-		String hdfsUser = PropertiesInfo.prop_env.getProperty("hdfsUser", "hdfs");
-		String hdfsKeytab = PropertiesInfo.prop_env.getProperty("hdfsKey", "/etc/hdfs1/hdfs.keytab");
 		this.checkLog = PropertiesInfo.prop_env.getProperty("checkLog", "false");
 		
-		loginInfo.setEnableKerberos(enableKerberos);
 		loginInfo.setManagerUrl("http://" + managerIP + ":8180");
 		loginInfo.setManagerUser(managerUser);
 		loginInfo.setManagerPwd(managerPwd);	
-		loginInfo.setHdfsUser(hdfsUser);
-		loginInfo.setHdfsKeytab(hdfsKeytab);
+		loginInfo.setHdfsUser("hdfs");
 		
-		commandOfCheckNamenode = UtilTool.getCmdOfSecurity("hdfs haadmin -getServiceState ", loginInfo);
+		commandOfCheckNamenode = "hdfs haadmin -getServiceState ";
 	}
 	
 	protected void getInfoByRestAPI() {
@@ -139,11 +135,13 @@ public class ClusterCheck extends ClusterInformation {
 				serviceConfigMap.put(name.toString(), sid.toString());
 				if(name.toString().startsWith("HDFS")) {
 					String path = "/etc/" + sid.toString() + "/conf/";
+					loginInfo.setHdfsKeytab("/etc/" + sid.toString() + "/hdfs.keytab");
 					hdfsPaths = new String[]{path + "hdfs-site.xml", path + "core-site.xml"};
 				}
 			}
 		}catch(Exception e) {
 			e.printStackTrace();
+			ClusterInformation.errorInfos.add("get info from Service.json error" + "|" + e.getMessage());
 		}
 	}
 	
@@ -151,13 +149,22 @@ public class ClusterCheck extends ClusterInformation {
 		String scriptSavePath = PropertiesInfo.prop_env.getProperty("scriptSavePath", "/tmp/");
 		String nodeUser = PropertiesInfo.prop_env.getProperty("nodeUser", "root");
 		String goalPath = PropertiesInfo.prop_env.getProperty("goalPath", "/home/");
+		String managerIP = PropertiesInfo.prop_env.getProperty("managerIP", "");
 		for(Iterator<String> hostnames = ClusterInformation.nodeInfoByRestAPIs.keySet().iterator(); 
 				hostnames.hasNext(); ) {
 			String hostname = hostnames.next();
 			NodeBean node = ClusterInformation.nodeInfoByRestAPIs.get(hostname);
+			if(node.getIpAddress().equals(managerIP)) {
+				managerHost = hostname;
+			}
 			String nodeStatus = node.getStatus();
 			if(nodeStatus.equals("Disasociated")) {
 				continue;
+			}
+			if(!UtilTool.isConnectionBySsh(node.getIpAddress(), 22)) {
+				ClusterInformation.errorInfos.add("connect to node " + node.getHostName() + " by port 22 is error|");
+				CheckInfos.networkCheck.add("connect to node " + node.getHostName() + " by port 22 is error");
+				LOG.error("connect to node " + node.getHostName() + " by port 22 is error");
 			}
 			if(checkLog.equals("true")) {
 				MyThreadPool.addNewThread(new LogCheckRunnable(node, nodeUser, scriptSavePath, serviceConfigMap));
@@ -183,12 +190,13 @@ public class ClusterCheck extends ClusterInformation {
 			LOG.info("namenode service is : " + nameservice);
 			String[] items = nameservice.split(",");
 			for(String item : items) {
-				if(checkActiveNamenode(node.getIpAddress(), item) == true) {
+				if(checkActiveNamenode(node.getIpAddress(), node.getHostName(), item) == true) {
 					String nnPort = configFile.get("dfs.namenode.http-address.nameservice1." + item);
 					LOG.info("hdfs namenode port : " + nnPort);
 					String[] nnPortSplit = nnPort.split("\\:");
 					NodeBean nodeOfActive = ClusterInformation.nodeInfoByRestAPIs.get(nnPortSplit[0]);
 					activeNamenodeIP = nodeOfActive.getIpAddress();
+					activeNamenodeHost = nodeOfActive.getHostName();
 					return;
 				}
 			}
@@ -198,8 +206,8 @@ public class ClusterCheck extends ClusterInformation {
 
 	}
 	
-	protected boolean checkActiveNamenode(String ipAddress, String namenodeservice) {
-		String command = commandOfCheckNamenode + namenodeservice;
+	protected boolean checkActiveNamenode(String ipAddress, String hostname, String namenodeservice) {
+		String command = UtilTool.getCmdOfSecurity(commandOfCheckNamenode, loginInfo, hostname) + namenodeservice;
 		try {
 			String result = ShellUtil.executeDist(command, ipAddress);
 			if(result != null && result.indexOf("active") != -1) {
@@ -213,14 +221,13 @@ public class ClusterCheck extends ClusterInformation {
 	
 	protected void getHdfsInfo() {
 		if(activeNamenodeIP == null && (PropertiesInfo.checkItems.isHdfsInfo() || PropertiesInfo.checkItems.isHdfsSpace())) {
-			LOG.error("get active namenode error");
 			return;
 		}
 		if(PropertiesInfo.checkItems.isHdfsInfo()) {
-			MyThreadPool.addNewThread(new HdfsCheckRunnable(activeNamenodeIP, loginInfo));
+			MyThreadPool.addNewThread(new HdfsCheckRunnable(activeNamenodeIP, activeNamenodeHost, loginInfo));
 		}
 		if(PropertiesInfo.checkItems.isHdfsSpace()) {
-			MyThreadPool.addNewThread(new HdfsSpaceCheckRunnable(activeNamenodeIP, loginInfo, hdfsPaths));
+			MyThreadPool.addNewThread(new HdfsSpaceCheckRunnable());
 		}
 	}
 	
@@ -243,6 +250,14 @@ public class ClusterCheck extends ClusterInformation {
 				servicenames.hasNext(); ) {
 			String servicename = servicenames.next();
 			ServiceBean service = ClusterInformation.serviceInfoByRestAPIs.get(servicename);
+			if(service.getType().equals("HDFS")) {
+				String enableKerberos = service.getEnableKerberos();
+				if(enableKerberos.equals("")) {
+					loginInfo.setEnableKerberos("false");
+				}else {
+					loginInfo.setEnableKerberos(enableKerberos);
+				}
+			}
 			boolean hasMetastore = false;
 			String inceptorHostname = null;
 			List<RoleBean> roles = service.getRoles();
@@ -275,6 +290,7 @@ public class ClusterCheck extends ClusterInformation {
 				tableCheckInfos.add(inceptorHostname + "," + servicename);
 			}
 		}
+		getHdfsPool();
 		if(PropertiesInfo.checkItems.isTable()) {
 			for(String tableCheckInfo : tableCheckInfos) {
 				String[] items = tableCheckInfo.split(",");
@@ -283,21 +299,55 @@ public class ClusterCheck extends ClusterInformation {
 		}
 	}
 	
-	private void getTablesInfo(String hostname, String servicename) {
-		Map<String, ConfigBean> configOfNode = ClusterInformation.configInfos.get(hostname);
-		ConfigBean config = configOfNode.get(servicename);
-		Map<String, String> configValue = config.getConfigFileValue("hive-site.xml");
-		String url = configValue.get("javax.jdo.option.ConnectionURL");
-		String username = configValue.get("javax.jdo.option.ConnectionUserName");
-		String password = configValue.get("javax.jdo.option.ConnectionPassword");
-		if(url == null || url.equals("") || username == null || username.equals("") || password == null || password.equals("")) {
-			LOG.error("get jdbc connection of mysql error");
+	protected void getHdfsPool() {
+		try {
+			if(activeNamenodeIP == null || activeNamenodeIP.equals("")) {
+				ClusterInformation.errorInfos.add("get active namenode ip error|");
+				LOG.error("get active namenode ip error");
+				return;
+			}
+			HdfsPool.openPool(activeNamenodeIP, loginInfo, hdfsPaths, managerHost);
+		}catch(Exception e) {
+			ClusterInformation.errorInfos.add("open hdfs connection pool error|" + e.getMessage());
+			e.printStackTrace();
 		}
-		TableInfoByJDBC tableCheck = new TableInfoByJDBC(servicename, url, username, password);
-		tableCheck.getTableInfo();
-		Vector<TableBean> tables = ClusterInformation.tableInfos.get(servicename);
-		for(TableBean table : tables) {
-			MyThreadPool.addNewThread(new TableCheckRunnable(activeNamenodeIP, hdfsPaths, table, loginInfo));
+	}
+	
+	protected void closeHdfsPool() {
+		try {
+			if(HdfsPool.buildPool) {
+				HdfsPool.closePool();
+			}
+		}catch(Exception e) {
+			ClusterInformation.errorInfos.add("close hdfs connection pool error|" + e.getMessage());
+			e.printStackTrace();
+		}
+	}
+	
+	private void getTablesInfo(String hostname, String servicename) {
+		if(!HdfsPool.buildPool) {
+			LOG.error("hdfs connection pool open error");
+			return;
+		}
+		try {
+			Map<String, ConfigBean> configOfNode = ClusterInformation.configInfos.get(hostname);
+			ConfigBean config = configOfNode.get(servicename);
+			Map<String, String> configValue = config.getConfigFileValue("hive-site.xml");
+			String url = configValue.get("javax.jdo.option.ConnectionURL");
+			String username = configValue.get("javax.jdo.option.ConnectionUserName");
+			String password = configValue.get("javax.jdo.option.ConnectionPassword");
+			if(url == null || url.equals("") || username == null || username.equals("") || password == null || password.equals("")) {
+				ClusterInformation.errorInfos.add("get connection of mysql error | ");
+				LOG.error("get jdbc connection of mysql error");
+			}
+			TableInfoByJDBC tableCheck = new TableInfoByJDBC(servicename, url, username, password);
+			tableCheck.getTableInfo();
+			Vector<TableBean> tables = ClusterInformation.tableInfos.get(servicename);
+			for(TableBean table : tables) {
+				MyThreadPool.addNewThread(new TableCheckRunnable(table));
+			}
+		}catch(Exception e) {
+			ClusterInformation.errorInfos.add("get table info error, service is : " + servicename + "|" + e.getMessage());
 		}
 	}
 	

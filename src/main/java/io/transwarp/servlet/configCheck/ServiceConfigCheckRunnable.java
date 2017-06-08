@@ -49,6 +49,7 @@ public class ServiceConfigCheckRunnable extends ClusterInformation implements Ru
 			LOG.info("service config check of node : " + hostname + " is success");
 		}catch(Exception e) {
 			e.printStackTrace();
+			ClusterInformation.errorInfos.add("get service config of node : " + hostname + " is error|" + e.getMessage());
 			LOG.error("service config check error, hostname is : " + hostname);
 			MyThreadPool.threadFailure();
 		}finally {

@@ -34,6 +34,7 @@ public class NodeCheckRunnable extends ClusterInformation implements Runnable{
 		}catch(Exception e) {
 			e.printStackTrace();
 			MyThreadPool.threadFailure();
+			ClusterInformation.errorInfos.add("node check of " + node.getHostName() + " error|" + e.getMessage());
 			LOG.error("node info check error, hostname is : " + node.getHostName());
 		}
 	}

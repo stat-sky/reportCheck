@@ -2,8 +2,10 @@ package io.transwarp.report.outputByExcel;
 
 import org.apache.log4j.Logger;
 
+import io.transwarp.information.ClusterInformation;
 import io.transwarp.information.PropertiesInfo;
 import io.transwarp.report.ClusterReportTemplate;
+import io.transwarp.report.outputByExcel.sheet.ErrorSheet;
 import io.transwarp.report.outputByExcel.sheet.HdfsInfoSheet;
 import io.transwarp.report.outputByExcel.sheet.HdfsMetaSheet;
 import io.transwarp.report.outputByExcel.sheet.HdfsSpaceSheet;
@@ -24,6 +26,20 @@ public class ClusterReport extends ClusterReportTemplate {
 	@Override
 	public void outputToFile(String path) throws Exception {
 		int id = 0;
+		if(ClusterInformation.errorInfos.size() > 0) {
+			ExcelSheetTemplate sheet = null;
+			try {
+				sheet = new ErrorSheet(path, "error", id);
+				sheet.writeToExcel();
+				id += 1;
+			}catch(Exception e) {
+				e.printStackTrace();
+			}finally {
+				if(sheet != null) {
+					sheet.close();
+				}
+			}
+		}
 		String[] outputItems = PropertiesInfo.checkItems.getOutputSheet();
 		for(String item : outputItems) {
 			ExcelSheetTemplate sheet = null;

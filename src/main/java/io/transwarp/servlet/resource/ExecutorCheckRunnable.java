@@ -40,6 +40,7 @@ public class ExecutorCheckRunnable extends ClusterInformation implements Runnabl
 		}catch(Exception e) {
 			e.printStackTrace();
 			MyThreadPool.threadFailure();
+			ClusterInformation.errorInfos.add("executor check is error, service is : " + servicename + "|" + e.getMessage());
 			LOG.error("executor check is error, service is : " + servicename);
 		}
 	}

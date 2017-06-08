@@ -58,6 +58,8 @@ public class ClusterInformation {
 	
 	protected static String tdh_version;
 	
+	protected static Vector<String> errorInfos = new Vector<String>();
+	
 	public static void setTdhVersion(String version) {
 		tdh_version = version;
 	}

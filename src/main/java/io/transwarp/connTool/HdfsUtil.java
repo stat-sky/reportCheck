@@ -17,11 +17,11 @@ public class HdfsUtil {
 	private static final Logger LOG = Logger.getLogger(HdfsUtil.class);
 	
 	
-	public static FileSystem getHdfsFileSystem(String[] configPaths, String ipAddress, LoginInfoBean loginInfo) throws Exception {
+	public static FileSystem getHdfsFileSystem(String[] configPaths, String ipAddress, LoginInfoBean loginInfo, String managerHost) throws Exception {
 		Configuration configuration = loadConfiguration(configPaths);
 		String enableKerberos = loginInfo.getEnableKerberos();
 		if(enableKerberos.equals("true")) {
-			configuration = certificateSafety(configuration, loginInfo);
+			configuration = certificateSafety(configuration, loginInfo, managerHost);
 			return FileSystem.get(configuration);
 		}
 		return FileSystem.get(URI.create("hdfs://" + ipAddress + ":8020"), configuration, loginInfo.getHdfsUser());
@@ -40,9 +40,9 @@ public class HdfsUtil {
 		return configuration;
 	}
 	
-	private static Configuration certificateSafety(Configuration configuration, LoginInfoBean loginInfo) throws Exception{
+	private static Configuration certificateSafety(Configuration configuration, LoginInfoBean loginInfo, String managerHost) throws Exception{
 		UserGroupInformation.setConfiguration(configuration);
-		UserGroupInformation.loginUserFromKeytab(loginInfo.getHdfsUser(), loginInfo.getHdfsKeytab());
+		UserGroupInformation.loginUserFromKeytab(loginInfo.getHdfsUser() + "/" + managerHost, loginInfo.getHdfsKeytab());
 		return configuration;
 	}
 	
